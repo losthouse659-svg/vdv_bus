@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="./assets/css/styles.css" />
+  <!-- Puter.js - CORS-free fetch, funguje na GitHub Pages -->
+  <script src="https://js.puter.com/v2/"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
@@ -17,20 +19,20 @@
     <header class="topbar">
       <div>
         <p class="eyebrow">Live tracking</p>
-        <h1>Autobusy VDV &ndash; Kraj Vysočina</h1>
+        <h1>Autobusy VDV &ndash; Kraj Vyso&#269;ina</h1>
       </div>
       <div class="status-card">
         <span class="status-dot" id="statusDot"></span>
         <div>
           <p class="status-label">Stav</p>
-          <p id="statusText">Načítám data…</p>
+          <p id="statusText">Na&#269;&#237;t&#225;m data&hellip;</p>
         </div>
       </div>
     </header>
     <main class="content">
       <section class="panel">
         <div class="panel-head">
-          <h2>Aktuální poloha spojů</h2>
+          <h2>Aktu&#225;ln&#237; poloha spoj&#367;</h2>
           <button id="refreshBtn" type="button">Obnovit</button>
         </div>
         <div class="map-wrap">
