@@ -1,128 +1,122 @@
-const API_URL =
-  "https://api.allorigins.win/raw?url=" +
-  encodeURIComponent("https://mapavdv.kr-vysocina.cz/Ajax/GetPoints");
-
+// Cilove API
+const TARGET_URL = "https://mapavdv.kr-vysocina.cz/Ajax/GetPoints";
 const REFRESH_MS = 15000;
 
 const statusText = document.getElementById("statusText");
-const statusDot = document.getElementById("statusDot");
+const statusDot  = document.getElementById("statusDot");
 const refreshBtn = document.getElementById("refreshBtn");
 
-// Inicializace Leaflet mapy – Kraj Vysocina
-const map = L.map("map", {
-  zoomControl: true,
-}).setView([49.394, 15.591], 9);
-
+// Inicializace Leaflet mapy
+const map = L.map("map", { zoomControl: true }).setView([49.394, 15.591], 9);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors",
 }).addTo(map);
 
-// Vrstva pro markery – daji se hromadne mazat
 const markersLayer = L.layerGroup().addTo(map);
 
 function setStatus(text, isError = false) {
   statusText.textContent = text;
-  if (isError) {
-    statusDot.style.background = "#f97373";
-    statusDot.style.boxShadow = "0 0 18px #f97373";
-  } else {
-    statusDot.style.background = "#36d399";
-    statusDot.style.boxShadow = "0 0 18px #36d399";
-  }
+  statusDot.style.background = isError ? "#f97373" : "#36d399";
+  statusDot.style.boxShadow  = isError ? "0 0 18px #f97373" : "0 0 18px #36d399";
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (m) => {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    }[m];
-  });
+  return String(str ?? "").replace(/[&<>"']/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])
+  );
 }
 
-function normalizePoints(data) {
-  const items = Array.isArray(data)
-    ? data
-    : data?.points || data?.data || data?.items || [];
-
+// Presne parsovani API: pole objektu {id, lat, lng, text, finalStopName, delay, traction}
+function parsePoints(raw) {
+  let items = raw;
+  // allorigins /get wrapper
+  if (raw && typeof raw.contents === "string") {
+    try { items = JSON.parse(raw.contents); } catch { return []; }
+  }
+  if (!Array.isArray(items)) return [];
   return items
-    .map((item) => {
-      const lat = Number(
-        item.lat ??
-          item.latitude ??
-          item.y ??
-          item.Y ??
-          item.position?.lat ??
-          item.Position?.Lat
-      );
-      const lng = Number(
-        item.lng ??
-          item.lon ??
-          item.longitude ??
-          item.x ??
-          item.X ??
-          item.position?.lng ??
-          item.Position?.Lon
-      );
-      const name = String(
-        item.name ??
-          item.LineName ??
-          item.line ??
-          item.route ??
-          item.trip ??
-          item.title ??
-          "Spoj"
-      ).trim();
-      return { lat, lng, name };
-    })
-    .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+    .filter(i => i.lat != null && i.lng != null)
+    .map(i => ({
+      lat:   parseFloat(i.lat),
+      lng:   parseFloat(i.lng),
+      line:  String(i.text ?? "?").trim(),
+      dest:  String(i.finalStopName ?? "").trim(),
+      delay: Number(i.delay ?? 0),
+    }))
+    .filter(p => isFinite(p.lat) && isFinite(p.lng));
+}
+
+// Fetch pres Puter.js (CORS-free) nebo fallback proxy
+async function fetchData() {
+  // 1. zkus puter.js (funguje na GitHub Pages bez API klice)
+  if (window.puter && puter.net && puter.net.fetch) {
+    try {
+      const res = await puter.net.fetch(TARGET_URL);
+      if (res.ok) return await res.json();
+    } catch (e) { console.warn("puter fetch selhal:", e); }
+  }
+
+  // 2. zkus allorigins /get (vraci { contents: "..." })
+  try {
+    const res = await fetch(
+      "https://api.allorigins.win/get?url=" + encodeURIComponent(TARGET_URL),
+      { cache: "no-store" }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) { console.warn("allorigins selhal:", e); }
+
+  // 3. zkus cors.lol
+  try {
+    const res = await fetch(
+      "https://api.cors.lol/?url=" + encodeURIComponent(TARGET_URL),
+      { cache: "no-store" }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) { console.warn("cors.lol selhal:", e); }
+
+  // 4. zkus codetabs
+  try {
+    const res = await fetch(
+      "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(TARGET_URL),
+      { cache: "no-store" }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) { console.warn("codetabs selhal:", e); }
+
+  throw new Error("Vsechny proxy selhaly");
 }
 
 function renderPoints(points) {
   markersLayer.clearLayers();
-  points.forEach((p) => {
-    const marker = L.circleMarker([p.lat, p.lng], {
+  points.forEach(p => {
+    const delayTxt = p.delay > 0 ? `+${p.delay} min` : p.delay < 0 ? `${p.delay} min` : "vcas";
+    const popup = `<strong>Linka ${escapeHtml(p.line)}</strong><br>Smer: ${escapeHtml(p.dest)}<br>Zpozdeni: ${delayTxt}`;
+    L.circleMarker([p.lat, p.lng], {
       radius: 8,
       color: "#7aa2ff",
       weight: 2,
-      fillColor: "#0ea5e9",
+      fillColor: p.delay > 5 ? "#f97373" : "#0ea5e9",
       fillOpacity: 0.9,
-    });
-    marker.bindPopup(
-      `<strong>${escapeHtml(p.name)}</strong><br>${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`
-    );
-    marker.addTo(markersLayer);
+    }).bindPopup(popup).addTo(markersLayer);
   });
   if (points.length) {
-    map.fitBounds(markersLayer.getBounds().pad(0.18));
+    try { map.fitBounds(markersLayer.getBounds().pad(0.1)); } catch {}
   }
 }
 
 async function loadData() {
+  setStatus("Nacitam polohy...");
   try {
-    setStatus("Nacitam aktualni polohy...");
-    const res = await fetch(API_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    const points = normalizePoints(json);
+    const raw    = await fetchData();
+    const points = parsePoints(raw);
     renderPoints(points);
-    if (points.length) {
-      setStatus(`Nacteno ${points.length} pozic`);
-    } else {
-      setStatus("Zadna data v odpovedi");
-    }
+    setStatus(points.length > 0 ? `Zobrazenych spoju: ${points.length}` : "API nevratio data", points.length === 0);
   } catch (err) {
     console.error(err);
-    setStatus("Chyba nacteni dat", true);
+    setStatus("Chyba: nelze nacist data", true);
   }
 }
 
-refreshBtn.addEventListener("click", () => {
-  loadData();
-});
-
+refreshBtn.addEventListener("click", loadData);
 loadData();
 setInterval(loadData, REFRESH_MS);
