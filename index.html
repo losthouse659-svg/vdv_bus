@@ -15,30 +15,64 @@
 </head>
 <body>
   <div class="app-shell">
+
+    <!-- TOPBAR -->
     <header class="topbar">
-      <div>
+      <div class="topbar-left">
         <p class="eyebrow">Live tracking</p>
         <h1>Autobusy VDV &ndash; Kraj Vyso&#269;ina</h1>
       </div>
-      <div class="status-card">
-        <span class="status-dot" id="statusDot"></span>
-        <div>
-          <p class="status-label">Stav</p>
-          <p id="statusText">Na&#269;&#237;t&#225;m data&hellip;</p>
+      <div class="topbar-right">
+        <div class="status-card">
+          <span class="status-dot" id="statusDot"></span>
+          <div>
+            <p class="status-label">Stav</p>
+            <p id="statusText">Na&#269;&#237;t&#225;m data&hellip;</p>
+          </div>
         </div>
+        <button id="toggleSide" type="button">&#128652; Seznam spoj&#367;</button>
+        <button id="refreshBtn" type="button">&#8635; Obnovit</button>
       </div>
     </header>
+
+    <!-- LEGENDA -->
+    <div class="legend">
+      <span class="legend-item"><span class="leg-dot" style="background:#0ea5e9"></span> V&#269;as</span>
+      <span class="legend-item"><span class="leg-dot" style="background:#facc15"></span> D&#345;&#237;v &gt;2 min</span>
+      <span class="legend-item"><span class="leg-dot" style="background:#f97373"></span> Zpo&#382;d&#283;n&#237; &gt;5 min</span>
+      <span class="legend-item">&#128652; Autobus &nbsp; &#128642; Vlak</span>
+    </div>
+
+    <!-- MAIN -->
     <main class="content">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Aktu&#225;ln&#237; poloha spoj&#367;</h2>
-          <button id="refreshBtn" type="button">Obnovit</button>
+
+      <!-- SIDEBAR SEZNAM SPOJU -->
+      <aside id="sidePanel" class="side-panel">
+        <div class="side-header">
+          <h2>Seznam spoj&#367;</h2>
+          <button id="sideClose" class="icon-btn" title="Zavrit">&times;</button>
         </div>
+        <div id="sideList" class="side-list"></div>
+      </aside>
+
+      <!-- MAPA -->
+      <section class="panel map-section">
         <div class="map-wrap">
           <div id="map"></div>
         </div>
       </section>
+
     </main>
+
+    <!-- DETAIL JIZDNIHO RADU -->
+    <div id="detailPanel" class="detail-panel">
+      <div class="detail-header">
+        <h3>Detail spoje</h3>
+        <button id="detailClose" class="icon-btn">&times;</button>
+      </div>
+      <div id="detailBody" class="detail-body"></div>
+    </div>
+
   </div>
   <script src="./assets/js/app.js"></script>
 </body>
