@@ -5,20 +5,37 @@
   <title>Mapa autobusů VDV</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="./assets/css/styles.css" />
 </head>
 <body>
-  <div id="loading">Načítání...</div>
-  <button id="rt-btn" title="Zapnout živou mapu">▶</button>
-  <button id="locate-btn" title="Moje poloha">⌖</button>
-  <div id="mobile-bottom-bar" class="hidden">
-    <div id="mobile-bar-content"></div>
-  </div>
-  <div id="timetable-modal" class="hidden">
-    <div id="timetable-modal-content"></div>
-  </div>
   <div id="map"></div>
+
+  <!-- Status badge vpravo nahore -->
+  <div id="status-badge">
+    <span id="statusDot"></span>
+    <span id="statusText">Načítám...</span>
+    <button id="refreshBtn" title="Obnovit">↻</button>
+  </div>
+
+  <!-- Sidebar tlacitko -->
+  <button id="toggleSide" title="Seznam spojů">☰</button>
+
+  <!-- Sidebar panel -->
+  <div id="sidePanel">
+    <div id="sidePanelHeader">
+      <span>Spoje</span>
+      <button id="sideClose">✕</button>
+    </div>
+    <div id="sideList"></div>
+  </div>
+
+  <!-- Detail panel -->
+  <div id="detailPanel">
+    <button id="detailClose">✕</button>
+    <div id="detailBody"></div>
+  </div>
+
   <script src="./assets/js/app.js"></script>
 </body>
 </html>
