@@ -1,65 +1,24 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b1220" />
-  <title>VDV Bus Tracker</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <meta charset="utf-8">
+  <title>Mapa autobusů VDV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <link rel="stylesheet" href="./assets/css/styles.css" />
-  <script src="https://js.puter.com/v2/"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
-
-  <!-- MAPA pres celou obrazovku -->
+  <div id="loading">Načítání...</div>
+  <button id="rt-btn" title="Zapnout živou mapu">▶</button>
+  <button id="locate-btn" title="Moje poloha">⌖</button>
+  <div id="mobile-bottom-bar" class="hidden">
+    <div id="mobile-bar-content"></div>
+  </div>
+  <div id="timetable-modal" class="hidden">
+    <div id="timetable-modal-content"></div>
+  </div>
   <div id="map"></div>
-
-  <!-- TOPBAR plovouci nad mapou -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <p class="eyebrow">Live tracking</p>
-      <h1>VDV &ndash; Kraj Vyso&#269;ina</h1>
-    </div>
-    <div class="topbar-right">
-      <div class="status-card">
-        <span class="status-dot" id="statusDot"></span>
-        <p id="statusText">Na&#269;&#237;t&#225;m&hellip;</p>
-      </div>
-      <button id="toggleSide" type="button">&#128652; Spoje</button>
-      <button id="refreshBtn" type="button">&#8635;</button>
-    </div>
-  </header>
-
-  <!-- LEGENDA plovouci nad mapou -->
-  <div class="legend">
-    <span class="leg-item"><span class="leg-dot" style="background:#0ea5e9"></span>V&#269;as</span>
-    <span class="leg-item"><span class="leg-dot" style="background:#facc15"></span>D&#345;&#237;v &gt;2min</span>
-    <span class="leg-item"><span class="leg-dot" style="background:#f97373"></span>Zpo&#382;d&#283;n&#237; &gt;5min</span>
-    <span class="leg-item">&#128652; Bus &nbsp;&#128642; Vlak</span>
-  </div>
-
-  <!-- SIDEBAR SEZNAM SPOJU (zavreny defaultne) -->
-  <aside id="sidePanel" class="side-panel">
-    <div class="side-header">
-      <h2>Seznam spoj&#367;</h2>
-      <button id="sideClose" class="icon-btn">&times;</button>
-    </div>
-    <div id="sideList" class="side-list"></div>
-  </aside>
-
-  <!-- DETAIL JIZDNIHO RADU -->
-  <div id="detailPanel" class="detail-panel">
-    <div class="detail-header">
-      <h3>Detail spoje</h3>
-      <button id="detailClose" class="icon-btn">&times;</button>
-    </div>
-    <div id="detailBody" class="detail-body"></div>
-  </div>
-
   <script src="./assets/js/app.js"></script>
 </body>
 </html>
