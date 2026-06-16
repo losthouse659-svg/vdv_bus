@@ -2,35 +2,49 @@ const TARGET_URL = "https://mapavdv.kr-vysocina.cz/Ajax/GetPoints";
 const REFRESH_MS = 15000;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const statusText = document.getElementById("statusText");
-  const statusDot  = document.getElementById("statusDot");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const sideList   = document.getElementById("sideList");
-  const sidePanel  = document.getElementById("sidePanel");
-  const sideClose  = document.getElementById("sideClose");
-  const detailPanel= document.getElementById("detailPanel");
-  const detailBody = document.getElementById("detailBody");
-  const detailClose= document.getElementById("detailClose");
+  const statusText  = document.getElementById("statusText");
+  const statusDot   = document.getElementById("statusDot");
+  const refreshBtn  = document.getElementById("refreshBtn");
+  const sideList    = document.getElementById("sideList");
+  const sidePanel   = document.getElementById("sidePanel");
+  const sideClose   = document.getElementById("sideClose");
+  const detailPanel = document.getElementById("detailPanel");
+  const detailBody  = document.getElementById("detailBody");
+  const detailClose = document.getElementById("detailClose");
 
-  // --- MAPA ---
+  // --- MAPA (dark theme - CartoDB Dark Matter) ---
   const map = L.map("map", { zoomControl: true }).setView([49.394, 15.591], 9);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "\u00a9 OpenStreetMap contributors",
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: "abcd",
+    maxZoom: 19
   }).addTo(map);
   const markersLayer = L.layerGroup().addTo(map);
 
   // --- IKONY ---
   function makeIcon(type, isEarly) {
     const emoji = type === "train" ? "\ud83d\ude82" : "\ud83d\ude8c";
-    const bg    = isEarly ? "#facc15" : (type === "train" ? "#a78bfa" : "#0ea5e9");
-    const html  = `<div style="background:${bg};border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.3)">${emoji}</div>`;
+    const bg = isEarly ? "#facc15" : (type === "train" ? "#a78bfa" : "#0ea5e9");
+    const html = `<div style="background:${bg};border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.3)">${emoji}</div>`;
     return L.divIcon({ html, className: "", iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18] });
   }
 
-  function setStatus(text, isError = false) {
+  // --- STATUS: Nacitam / Online / Offline ---
+  function setStatus(text, state = "ok") {
     statusText.textContent = text;
-    statusDot.style.background  = isError ? "#f97373" : "#36d399";
-    statusDot.style.boxShadow   = isError ? "0 0 18px #f97373" : "0 0 18px #36d399";
+    if (state === "loading") {
+      statusDot.style.background = "#f59e0b";
+      statusDot.style.boxShadow  = "0 0 10px #f59e0b";
+      statusDot.title = "Nacitam";
+    } else if (state === "error") {
+      statusDot.style.background = "#f97373";
+      statusDot.style.boxShadow  = "0 0 10px #f97373";
+      statusDot.title = "Offline";
+    } else {
+      statusDot.style.background = "#36d399";
+      statusDot.style.boxShadow  = "0 0 10px #36d399";
+      statusDot.title = "Online";
+    }
   }
 
   function escapeHtml(str) {
@@ -58,57 +72,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function fetchData() {
-    const ts     = Date.now();
+    const ts = Date.now();
     const target = TARGET_URL + "?t=" + ts;
-
     try {
       if (window.puter) {
         const res = await puter.net.fetch(target);
         if (res.ok) return await res.json();
       }
     } catch(e) { console.warn("puter fail", e); }
-
     try {
       const res = await fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(target), { cache: "no-store" });
       if (res.ok) return await res.json();
     } catch(e) { console.warn("allorigins fail", e); }
-
     try {
       const res = await fetch("https://api.cors.lol/?url=" + encodeURIComponent(target), { cache: "no-store" });
       if (res.ok) return await res.json();
     } catch(e) { console.warn("cors.lol fail", e); }
-
     try {
       const res = await fetch("https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(target), { cache: "no-store" });
       if (res.ok) return await res.json();
     } catch(e) { console.warn("codetabs fail", e); }
-
     throw new Error("Vsechny proxy selhaly");
   }
 
-  // --- JIZDNI RAD pres IDOS widget ---
   function showSchedule(point) {
     const lineName = encodeURIComponent(point.line);
-    const dest     = encodeURIComponent(point.dest);
+    const dest = encodeURIComponent(point.dest);
     detailBody.innerHTML = `
-      <div class="detail-info">
-        <div class="detail-badge ${point.type}">${point.type === "train" ? "\ud83d\ude82 Vlak" : "\ud83d\ude8c Autobus"}</div>
-        <h3>Linka ${escapeHtml(point.line)}</h3>
-        <p>\u0160m\u011br: <strong>${escapeHtml(point.dest)}</strong></p>
-        <p>Aktu\u00e1ln\u00ed zpo\u017ed\u011bn\u00ed: <strong class="delay-${point.delay > 5 ? "high" : point.delay < -2 ? "early" : "ok"}">${point.delay > 0 ? "+"+point.delay : point.delay} min</strong></p>
-      </div>
-      <div class="schedule-section">
-        <h4>\ud83d\udcc5 J\u00edzdn\u00ed \u0159\u00e1d</h4>
-        <p class="schedule-hint">Naj\u00edt j\u00edzdn\u00ed \u0159\u00e1d na IDOS:</p>
-        <a class="idos-btn" href="https://idos.cz/jizdnirady/spojeni/?f=&t=${dest}&date=&time=" target="_blank">\ud83d\udd17 Otev\u0159\u00edt IDOS</a>
-        <a class="idos-btn" href="https://idos.cz/vyhledavani/?dotaz=${lineName}" target="_blank">\ud83d\udd0d Hledat linku ${escapeHtml(point.line)}</a>
-      </div>
-      <div class="schedule-section">
-        <h4>\ud83d\udccd GPS poloha</h4>
-        <p>\u0160\u00ed\u0159ka: ${point.lat.toFixed(5)}</p>
-        <p>D\u00e9lka: ${point.lng.toFixed(5)}</p>
-        <a class="idos-btn" href="https://www.google.com/maps?q=${point.lat},${point.lng}" target="_blank">\ud83d\uddfa Zobrazit na Google Maps</a>
-      </div>`;
+      <h3>${point.type === "train" ? "\ud83d\ude82 Vlak" : "\ud83d\ude8c Autobus"} Linka ${escapeHtml(point.line)}</h3>
+      <p>Smer: <strong>${escapeHtml(point.dest)}</strong></p>
+      <p>Zpozdeni: <strong>${point.delay > 0 ? "+"+point.delay : point.delay} min</strong></p>
+      <hr>
+      <p><a href="https://idos.cz/jizdnirady/spojeni/?f=&t=${dest}&date=&time=" target="_blank">\ud83d\udd17 Otevrit IDOS</a></p>
+      <p><a href="https://idos.cz/vyhledavani/?dotaz=${lineName}" target="_blank">\ud83d\udd0d Hledat linku ${escapeHtml(point.line)}</a></p>
+      <hr>
+      <p>Lat: ${point.lat.toFixed(5)} | Lng: ${point.lng.toFixed(5)}</p>
+      <p><a href="https://www.google.com/maps?q=${point.lat},${point.lng}" target="_blank">\ud83d\uddfa Google Maps</a></p>
+    `;
     detailPanel.classList.add("open");
   }
 
@@ -120,73 +120,45 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPoints(points) {
     markersLayer.clearLayers();
     allPoints = points;
-
-    // Sidebar list
     sideList.innerHTML = "";
-    points.forEach((p, idx) => {
+    points.forEach((p) => {
       const isEarly = p.delay < -2;
       const isLate  = p.delay > 5;
-      let delayTxt  = p.delay > 0 ? "+"+p.delay+" min" : p.delay < 0 ? p.delay+" min" : "v\u010das";
-      let delayClass= isLate ? "delay-high" : isEarly ? "delay-early" : "delay-ok";
-
-      // Sidebar polozka
+      let delayTxt  = p.delay > 0 ? "+"+p.delay+" min" : p.delay < 0 ? p.delay+" min" : "vcas";
       const li = document.createElement("div");
       li.className = "side-item" + (isLate ? " late" : isEarly ? " early" : "");
-      li.innerHTML = `
-        <span class="side-icon">${p.type === "train" ? "\ud83d\ude82" : "\ud83d\ude8c"}</span>
-        <div class="side-info">
-          <strong>Linka ${escapeHtml(p.line)}</strong>
-          <span>${escapeHtml(p.dest) || "?"}</span>
-        </div>
-        <span class="side-delay ${delayClass}">${delayTxt}</span>`;
-      li.addEventListener("click", () => {
-        map.setView([p.lat, p.lng], 13);
-        showSchedule(p);
-      });
+      li.innerHTML = `<span class="side-icon">${p.type === "train" ? "\ud83d\ude82" : "\ud83d\ude8c"}</span><span class="side-info"><strong>Linka ${escapeHtml(p.line)}</strong><br>${escapeHtml(p.dest) || "?"}</span><span class="side-delay ${isLate ? "delay-high" : isEarly ? "delay-early" : "delay-ok"}">${delayTxt}</span>`;
+      li.addEventListener("click", () => { map.setView([p.lat, p.lng], 13); showSchedule(p); });
       sideList.appendChild(li);
-
-      // Mapa marker
-      let fillColor = "#0ea5e9";
-      if (isLate)  fillColor = "#f97373";
-      if (isEarly) fillColor = "#facc15";
-
-      const icon   = makeIcon(p.type, isEarly);
+      const icon = makeIcon(p.type, isEarly);
       const marker = L.marker([p.lat, p.lng], { icon });
-      marker.bindPopup(`
-        <strong>${p.type === "train" ? "\ud83d\ude82 Vlak" : "\ud83d\ude8c Autobus"} ${escapeHtml(p.line)}</strong><br>
-        \u0160m\u011br: ${escapeHtml(p.dest)}<br>
-        Zpo\u017ed\u011bn\u00ed: <b style="color:${isLate ? "#f97373" : isEarly ? "#facc15" : "#36d399'}">${delayTxt}</b><br>
-        <a href="#" onclick="event.preventDefault()" style="color:#7aa2ff">\ud83d\udcc5 J\u00edzdn\u00ed \u0159\u00e1d</a>`);
+      marker.bindPopup(`<strong>${p.type === "train" ? "\ud83d\ude82 Vlak" : "\ud83d\ude8c Autobus"} ${escapeHtml(p.line)}</strong><br>Smer: ${escapeHtml(p.dest)}<br>Zpozdeni: <strong>${delayTxt}</strong>`);
       marker.on("click", () => showSchedule(p));
       marker.addTo(markersLayer);
     });
-
-    if (points.length) {
-      try { map.fitBounds(markersLayer.getBounds().pad(0.1)); } catch {}
-    }
+    if (points.length) { try { map.fitBounds(markersLayer.getBounds().pad(0.1)); } catch {} }
   }
 
   async function loadData() {
-    setStatus("Na\u010d\u00edt\u00e1m polohy...");
+    setStatus("Nacitam...", "loading");
     try {
-      const raw    = await fetchData();
+      const raw = await fetchData();
       const points = parsePoints(raw);
       renderPoints(points);
       if (points.length > 0) {
-        setStatus("Zobrazeno spoj\u016f: " + points.length);
+        setStatus("Online ("+points.length+" spoju)", "ok");
       } else {
-        setStatus("API nevr\u00e1tilo \u017e\u00e1dn\u00e1 data", true);
+        setStatus("Online (zadna data)", "ok");
       }
     } catch(err) {
       console.error(err);
-      setStatus("Chyba: nelze na\u010d\u00edst data", true);
+      setStatus("Offline", "error");
     }
   }
 
   document.getElementById("toggleSide").addEventListener("click", () => {
     sidePanel.classList.toggle("open");
   });
-
   refreshBtn.addEventListener("click", loadData);
   loadData();
   setInterval(loadData, REFRESH_MS);
